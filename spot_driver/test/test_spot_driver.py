@@ -3,12 +3,14 @@ from threading import Thread
 from typing import Any, Optional
 
 import rclpy
+from bosdyn_msgs.msg import RobotCommandFeedback
 from rclpy import Context
 from rclpy.callback_groups import CallbackGroup, ReentrantCallbackGroup
 from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
 from std_srvs.srv import Trigger
 
 import spot_driver.spot_ros2
+from spot_driver.spot_ros2 import GoalResponse
 from spot_msgs.srv import (  # type: ignore
     Dock,
 )
@@ -125,6 +127,17 @@ class SpotDriverTest(unittest.TestCase):
         self.assertEqual(resp.success, True)
         resp = call_trigger_client(self.dock_client, self.command_exec, request=Dock.Request())
         self.assertEqual(resp.success, True)
+
+    def test_robot_command_goal_complete(self) -> None:
+        self.assertEqual(self.spot_ros2._robot_command_goal_complete(None), GoalResponse.IN_PROGRESS)
+
+        feedback = RobotCommandFeedback()
+
+        # Testing FullBodyFeedback
+        feedback.command.command_choice = feedback.command.COMMAND_FULL_BODY_FEEDBACK_SET
+
+        feedback.command.full_body_feedback.status.value = feedback.command.full_body_feedback.status.STATUS_UNKNOWN
+        self.assertEqual(self.spot_ros2._robot_command_goal_complete(feedback), GoalResponse.IN_PROGRESS)
 
 
 if __name__ == "__main__":
