@@ -7,9 +7,10 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchContext, LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction
 from launch.conditions import IfCondition
-from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.launch_description_sources import AnyLaunchDescriptionSource, PythonLaunchDescriptionSource
 from launch.substitutions import (
     Command,
+    EnvironmentVariable,
     FindExecutable,
     LaunchConfiguration,
     PathJoinSubstitution,
@@ -72,15 +73,15 @@ def launch_setup(context: LaunchContext, ld: LaunchDescription) -> None:
     ld.add_action(spot_driver_node)
 
     spot_image_publisher_node = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
+        AnyLaunchDescriptionSource(
             [PathJoinSubstitution([FindPackageShare("spot_driver_cpp"), "launch", "spot_image_publisher.launch.xml"])]
         ),
-        launch_arguments=[
-            config_file,
-            {
-                "spot_name": spot_name,
-            },
-        ],
+        launch_arguments={
+            "spot_name": spot_name,
+            "address": EnvironmentVariable("SPOT_IP"),
+            "username": EnvironmentVariable("BOSDYN_CLIENT_USERNAME"),
+            "password": EnvironmentVariable("BOSDYN_CLIENT_PASSWORD"),
+        }.items(),
     )
     ld.add_action(spot_image_publisher_node)
 
