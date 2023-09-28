@@ -56,8 +56,10 @@ def launch_setup(context: LaunchContext, ld: LaunchDescription) -> None:
     pkg_share = FindPackageShare("spot_description").find("spot_description")
 
     spot_driver_params = [config_file, {"spot_name": spot_name}]
-    if use_depth_registered_nodelets.perform(context):
-        spot_driver_params.append({"publish_depth_registered": False})
+    # if use_depth_registered_nodelets.perform(context):
+    spot_driver_params.append({"publish_depth_registered": False})
+    spot_driver_params.append({"publish_depth": False})
+    spot_driver_params.append({"publish_depth_rgb": False})
 
     spot_driver_node = launch_ros.actions.Node(
         package="spot_driver",
@@ -68,6 +70,19 @@ def launch_setup(context: LaunchContext, ld: LaunchDescription) -> None:
         namespace=spot_name,
     )
     ld.add_action(spot_driver_node)
+
+    spot_image_publisher_node = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            [PathJoinSubstitution([FindPackageShare("spot_driver_cpp"), "launch", "spot_image_publisher.launch.xml"])]
+        ),
+        launch_arguments=[
+            config_file,
+            {
+                "spot_name": spot_name,
+            },
+        ],
+    )
+    ld.add_action(spot_image_publisher_node)
 
     if not tf_prefix and spot_name:
         tf_prefix = PathJoinSubstitution([spot_name, ""])
