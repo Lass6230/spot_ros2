@@ -62,7 +62,7 @@ def launch_setup(context: LaunchContext, ld: LaunchDescription) -> None:
         "spot_name": spot_name,
         "publish_depth_registered": False,
         "publish_depth": False,
-        "publish_depth_rgb": False,
+        "publish_rgb": False,
     }
 
     spot_driver_node = launch_ros.actions.Node(
