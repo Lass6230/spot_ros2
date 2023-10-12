@@ -7,7 +7,7 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchContext, LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction
 from launch.conditions import IfCondition
-from launch.launch_description_sources import AnyLaunchDescriptionSource, PythonLaunchDescriptionSource
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import (
     Command,
     EnvironmentVariable,
@@ -56,32 +56,42 @@ def launch_setup(context: LaunchContext, ld: LaunchDescription) -> None:
 
     pkg_share = FindPackageShare("spot_description").find("spot_description")
 
-    spot_driver_params = [config_file, {"spot_name": spot_name}]
-    # if use_depth_registered_nodelets.perform(context):
-    spot_driver_params.append({"publish_depth_registered": False})
-    spot_driver_params.append({"publish_depth": False})
-    spot_driver_params.append({"publish_depth_rgb": False})
+    # Since spot_image_publisher_node is responsible for retrieving and publishing images, disable all image publishing
+    # in spot_driver.
+    spot_driver_params = {
+        "spot_name": spot_name,
+        "publish_depth_registered": False,
+        "publish_depth": False,
+        "publish_depth_rgb": False,
+    }
 
     spot_driver_node = launch_ros.actions.Node(
         package="spot_driver",
         executable="spot_ros2",
         name="spot_ros2",
         output="screen",
-        parameters=spot_driver_params,
+        parameters=[config_file, spot_driver_params],
         namespace=spot_name,
     )
     ld.add_action(spot_driver_node)
 
-    spot_image_publisher_node = IncludeLaunchDescription(
-        AnyLaunchDescriptionSource(
-            [PathJoinSubstitution([FindPackageShare("spot_driver_cpp"), "launch", "spot_image_publisher.launch.xml"])]
-        ),
-        launch_arguments={
-            "spot_name": spot_name,
-            "address": EnvironmentVariable("SPOT_IP"),
-            "username": EnvironmentVariable("BOSDYN_CLIENT_USERNAME"),
-            "password": EnvironmentVariable("BOSDYN_CLIENT_PASSWORD"),
-        }.items(),
+    spot_image_publisher_params = {
+        "spot_name": spot_name,
+        "address": EnvironmentVariable("SPOT_IP"),
+        "username": EnvironmentVariable("BOSDYN_CLIENT_USERNAME"),
+        "password": EnvironmentVariable("BOSDYN_CLIENT_PASSWORD"),
+    }
+    # If using nodelets to generate registered depth images, do not retrieve and publish registered depth images using
+    # spot_image_publisher_node.
+    if use_depth_registered_nodelets.perform(context).lower() == "true":
+        spot_image_publisher_params.update({"publish_depth_registered": False})
+
+    spot_image_publisher_node = launch_ros.actions.Node(
+        package="spot_driver_cpp",
+        executable="spot_image_publisher_node",
+        output="screen",
+        parameters=[config_file, spot_image_publisher_params],
+        namespace=spot_name,
     )
     ld.add_action(spot_image_publisher_node)
 
