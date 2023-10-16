@@ -10,7 +10,6 @@ from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import (
     Command,
-    EnvironmentVariable,
     FindExecutable,
     LaunchConfiguration,
     PathJoinSubstitution,
@@ -77,9 +76,6 @@ def launch_setup(context: LaunchContext, ld: LaunchDescription) -> None:
 
     spot_image_publisher_params = {
         "spot_name": spot_name,
-        "address": EnvironmentVariable("SPOT_IP"),
-        "username": EnvironmentVariable("BOSDYN_CLIENT_USERNAME"),
-        "password": EnvironmentVariable("BOSDYN_CLIENT_PASSWORD"),
     }
     # If using nodelets to generate registered depth images, do not retrieve and publish registered depth images using
     # spot_image_publisher_node.
