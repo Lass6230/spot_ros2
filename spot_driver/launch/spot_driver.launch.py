@@ -30,6 +30,7 @@ def generate_launch_description():
         output='screen',
         parameters=[config_login,config_ros],
     )
+    
 
     params = {'robot_description': robot_desc}
     robot_state_publisher = launch_ros.actions.Node(
